@@ -89,9 +89,9 @@ plotTC = figure(plot_height=300, plot_width=300, title="Time cells",
 plotf = figure(plot_height=300, plot_width=300, title="Input signal",
               tools="crosshair,pan,reset,save,wheel_zoom",
                x_range=[0, length_time - dtime], y_range=[-0.01, 1.1])
-plotr = figure(plot_height=300, plot_width=300, title="Memory representation",
-              tools="crosshair,pan,reset,save,wheel_zoom",
-               x_range=[Taustar_min, Taustar_max], y_range=[-0.01, 1.1])
+#plotr = figure(plot_height=300, plot_width=300, title="Memory representation",
+#              tools="crosshair,pan,reset,save,wheel_zoom",
+#               x_range=[Taustar_min, Taustar_max], y_range=[-0.01, 1.1])
 
 source = ColumnDataSource(compute_source(0, T, t, f))
 plotLI.multi_line('xx', 'tt', source=source)
@@ -99,7 +99,7 @@ plotTC.multi_line('xx', 'TT', source=source)
 plotf.multi_line('xx', 'ff', source=source) #this can be improved since only one dimension is needed, right now f is constructed from repmat
 #import pdb; pdb.set_trace()
 source_vec = ColumnDataSource(compute_source_vec(0, T, Taustarlist))
-plotr.line('TTaustarlist', 'TT', source=source_vec) 
+#plotr.line('TTaustarlist', 'TT', source=source_vec) 
 
 label = Label(x=1.1, y=18, text=str(0), text_font_size='70pt', text_color='#eeeeee')
 plotLI.add_layout(label)
@@ -180,7 +180,7 @@ inputs = widgetbox(k_slider, Taustar_min_slider, Taustar_max_slider, buff_len_sl
 
 layout = layout([
     [inputs, plotf, plotLI, plotTC],
-    [time_limit_slider, button_play, plotr],
+    [time_limit_slider, button_play],
 ], sizing_mode='fixed')
 
 #curdoc().add_root(row(inputs, plot, width=800))
