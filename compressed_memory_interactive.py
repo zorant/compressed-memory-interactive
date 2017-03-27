@@ -58,10 +58,15 @@ def compute_t_T(k, Taustar_max, Taustar_min, buff_len, length_time, dtime):
         L2 = t_diff/factorial(k)
         T[:,time_index] = L1.T*L2.T
         
-    return t, T, time_vec
+    return f, t, T, time_vec, Taustarlist
     
-def compute_source(time_limit, T):
-    source_dict = dict(a=T[k:10,0:int(time_limit/dtime):100].tolist(), b=np.matlib.repmat(np.arange(0,time_limit,dtime*100), 10-k, 1).tolist())
+def compute_source(time_limit, T, t, f):
+    source_dict = dict(ff=np.matlib.repmat(f[0:int(time_limit/dtime):100],buff_len, 1).tolist(), tt=t[k:-k,0:int(time_limit/dtime):100].tolist(), TT=T[k:-k,0:int(time_limit/dtime):100].tolist(), xx=np.matlib.repmat(np.arange(0,time_limit,dtime*100), buff_len, 1).tolist())
+    #import pdb; pdb.set_trace()
+    return source_dict
+    
+def compute_source_vec(time_limit, T, Taustarlist):
+    source_dict = dict(TTaustarlist=Taustarlist[k:-k].tolist(), TT=T[k:-k:,int(time_limit/dtime)].tolist())
     return source_dict
     
 #Initialize parameters
@@ -72,21 +77,35 @@ Taustar_max = 10
 length_time = 10
 dtime = 0.001
 
-t, T, time_vec = compute_t_T(k, Taustar_max, Taustar_min, buff_len, length_time, dtime)
+f, t, T, time_vec, Taustarlist = compute_t_T(k, Taustar_max, Taustar_min, buff_len, length_time, dtime)
     
 # Set up plot
-plot = figure(plot_height=400, plot_width=400, title="small big t test",
+plotLI = figure(plot_height=300, plot_width=300, title="Leaky integrators",
               tools="crosshair,pan,reset,save,wheel_zoom",
                x_range=[0, length_time - dtime], y_range=[-0.01, 0.1])
+plotTC = figure(plot_height=300, plot_width=300, title="Time cells",
+              tools="crosshair,pan,reset,save,wheel_zoom",
+               x_range=[0, length_time - dtime], y_range=[-0.01, 0.1])
+plotf = figure(plot_height=300, plot_width=300, title="Input signal",
+              tools="crosshair,pan,reset,save,wheel_zoom",
+               x_range=[0, length_time - dtime], y_range=[-0.01, 1.1])
+plotr = figure(plot_height=300, plot_width=300, title="Memory representation",
+              tools="crosshair,pan,reset,save,wheel_zoom",
+               x_range=[Taustar_min, Taustar_max], y_range=[-0.01, 1.1])
 
-source = ColumnDataSource(compute_source(0, T))
-plot.multi_line('b', 'a', source=source)
+source = ColumnDataSource(compute_source(0, T, t, f))
+plotLI.multi_line('xx', 'tt', source=source)
+plotTC.multi_line('xx', 'TT', source=source)
+plotf.multi_line('xx', 'ff', source=source) #this can be improved since only one dimension is needed, right now f is constructed from repmat
+#import pdb; pdb.set_trace()
+source_vec = ColumnDataSource(compute_source_vec(0, T, Taustarlist))
+plotr.line('TTaustarlist', 'TT', source=source_vec) 
 
 label = Label(x=1.1, y=18, text=str(0), text_font_size='70pt', text_color='#eeeeee')
-plot.add_layout(label)
+plotLI.add_layout(label)
     
 # Set up widgets
-text = TextInput(title="title", value='big T')
+#text = TextInput(title="title", value='big T')
 k_slider = Slider(title="k", value=k, start=1, end=10, step=1)
 Taustar_min_slider = Slider(title="tstr min", value=Taustar_min, start=1, end=4, step=1)
 Taustar_max_slider = Slider(title="tstr max", value=Taustar_max, start=6, end=15, step=1)
@@ -96,11 +115,11 @@ button_update = Button(label='Update', width=60)
 
 
 # Set up callbacks
-def update_title(attrname, old, new):
-    plot.title.text = text.value
+#def update_title(attrname, old, new):
+ #   plot.title.text = text.value
 
 
-text.on_change('value', update_title)
+#text.on_change('value', update_title)
 
 
 def update_data():
@@ -111,9 +130,9 @@ def update_data():
     Taustar_max = Taustar_max_slider.value
     buff_len = buff_len_slider.value
 
-    t, T, time_vec = compute_t_T(k, Taustar_max, Taustar_min, buff_len, length_time, dtime)
+    f, t, T, time_vec, Taustarlist = compute_t_T(k, Taustar_max, Taustar_min, buff_len, length_time, dtime)
     
-    source.data = compute_source(length_time, T)
+    source.data = compute_source(length_time, T, t, f)
     
     return t, T, time_vec
 
@@ -124,14 +143,15 @@ def animate_update():
         curdoc().remove_periodic_callback(animate_update)
         button_play.label = '► Play'
     label.text = str(time_limit)
-    source.data = compute_source(time_limit, T)
+    source.data = compute_source(time_limit, T, t, f)
+    source_vec.data = compute_source_vec(time_limit, T, Taustarlist)
     time_limit_slider.value = time_limit 
 
 
 def time_limit_slider_update(attrname, old, new):
     time_limit = time_limit_slider.value
     label.text = str(time_limit)
-    source.data = compute_source(time_limit, T)
+    source.data = compute_source(time_limit, T, t, f)
         
         
 time_limit_slider.on_change('value', time_limit_slider_update)
@@ -140,7 +160,7 @@ time_limit_slider.on_change('value', time_limit_slider_update)
 def animate():
     if button_play.label == '► Play':
         button_play.label = '❚❚ Pause'
-        curdoc().add_periodic_callback(animate_update, 100)
+        curdoc().add_periodic_callback(animate_update, 200)
     else:
         button_play.label = '► Play'
         curdoc().remove_periodic_callback(animate_update)
@@ -156,11 +176,11 @@ button_update.on_click(update_data)
 #    w.on_change('value', update_data)
 
 # Set up layouts and add to document
-inputs = widgetbox(text, k_slider, Taustar_min_slider, Taustar_max_slider, buff_len_slider, button_update)
+inputs = widgetbox(k_slider, Taustar_min_slider, Taustar_max_slider, buff_len_slider, button_update)
 
 layout = layout([
-    [inputs, plot],
-    [time_limit_slider, button_play],
+    [inputs, plotf, plotLI, plotTC],
+    [time_limit_slider, button_play, plotr],
 ], sizing_mode='fixed')
 
 #curdoc().add_root(row(inputs, plot, width=800))
