@@ -66,7 +66,7 @@ def compute_source(time_limit, T, t, f):
     return source_dict
     
 def compute_source_vec(time_limit, T, Taustarlist):
-    source_dict = dict(TTaustarlist=Taustarlist[k:-k].tolist(), TT=T[k:-k:,int(time_limit/dtime)].tolist())
+    source_dict = dict(TTaustarlist=Taustarlist[k:-k].tolist(), TT=T[k:-k:,int(time_limit/dtime)-1].tolist())
     return source_dict
     
 #Initialize parameters
@@ -133,6 +133,7 @@ def update_data():
     f, t, T, time_vec, Taustarlist = compute_t_T(k, Taustar_max, Taustar_min, buff_len, length_time, dtime)
     
     source.data = compute_source(length_time, T, t, f)
+    source_vec.data = compute_source_vec(length_time, T, Taustarlist)
     
     return t, T, time_vec
 
@@ -152,6 +153,7 @@ def time_limit_slider_update(attrname, old, new):
     time_limit = time_limit_slider.value
     label.text = str(time_limit)
     source.data = compute_source(time_limit, T, t, f)
+    source_vec.data = compute_source_vec(length_time, T, Taustarlist)
         
         
 time_limit_slider.on_change('value', time_limit_slider_update)
